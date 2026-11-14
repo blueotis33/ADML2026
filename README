@@ -1,4 +1,84 @@
-1. Setup (do this first)
+0. START HERE: Load the CSV and do the first clean-up
+0.1 Load the CSV
+python
+import pandas as pd                 # pandas = the tool for working with tables
+
+df = pd.read_csv('xxxx.csv')        # swap xxxx for your file name. df = your table
+print(df.head())                    # show the first 5 rows to check it worked
+
+Where the file goes: put the CSV in the same folder as your .py file, by dragging it into PyCharm's project panel. Then you only need the file name.
+
+If it's somewhere else, use the full path with an r in front:
+
+python
+df = pd.read_csv(r'C:\Users\c3688328\Downloads\xxxx.csv')
+
+(Right-click the file in File Explorer → Copy as path.)
+
+If it goes wrong:
+
+Problem	Fix
+FileNotFoundError	Check the spelling and .csv, or use the full path
+UnicodeDecodeError	pd.read_csv('xxxx.csv', encoding='latin1')
+Everything is in one column	pd.read_csv('xxxx.csv', sep=';')
+It's an Excel file	pd.read_excel('xxxx.xlsx'), after python -m pip install openpyxl
+0.2 Look at the data first (always do this)
+python
+print(df.shape)              # (number of rows, number of columns)
+print(df.info())             # column names, types, missing values
+print(df.describe())         # min / max / average: spot weird numbers
+print(df.isnull().sum())     # how many gaps in each column
+print(df.duplicated().sum()) # how many repeated rows
+
+📸 Screenshot these outputs for the report. They prove you checked the data.
+
+0.3 Pre-processing techniques: what they do and when to use them
+Technique	What it does (simple)	When to use it	Code
+Remove duplicates	Deletes rows that are exact copies	df.duplicated().sum() is more than 0	df = df.drop_duplicates()
+Drop missing rows	Deletes rows with gaps	Only a few rows have gaps (under about 5%)	df = df.dropna()
+Fill with median	Fills number gaps with the middle value	Number column with gaps, especially if it has outliers	df['Age'] = df['Age'].fillna(df['Age'].median())
+Fill with mean	Fills number gaps with the average	Number column with gaps and no big outliers	df['Age'] = df['Age'].fillna(df['Age'].mean())
+Fill with mode	Fills text gaps with the most common value	Text/category column with gaps	df['City'] = df['City'].fillna(df['City'].mode()[0])
+Drop columns	Removes columns that don't help	ID numbers, names, or a column that's mostly empty	df = df.drop(columns=['CustomerID'])
+Fix data types	Turns text that should be numbers into numbers	A number column shows as object in df.info()	df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+Tidy text	Makes "Male", " male" and "MALE" all the same	Category columns with messy spelling or spaces	df['Gender'] = df['Gender'].str.strip().str.lower()
+Remove outliers (IQR)	Deletes crazy extreme values	describe() shows a max that's far too big (e.g. age 999)	See the cleaning steps in section 4
+Label encoding	Turns categories into numbers, e.g. Yes/No → 1/0	The target column (what you're predicting), or yes/no columns	from sklearn.preprocessing import LabelEncoder
+df['Churn'] = LabelEncoder().fit_transform(df['Churn'])
+One-hot encoding	Makes a 0/1 column for each category	Text feature columns with several options (e.g. City)	df = pd.get_dummies(df, columns=['City'])
+Split X and y	Separates the inputs from the answer	Classification or regression (not clustering)	X = df.drop(columns=['Churn'])
+y = df['Churn']
+Train/test split	Keeps some data back to test the model fairly	Classification or regression	from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+Scaling (StandardScaler)	Puts all numbers on the same scale so big numbers don't dominate	KNN, SVM, logistic regression, K-Means, DBSCAN, PCA. Not needed for trees or random forests	from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+Check balance	Shows if one answer is much more common	Always, for classification	print(y.value_counts())
+Text cleaning (Week 6)	Removes HTML, punctuation and filler words, and shortens words	The data is text (reviews, tweets)	BeautifulSoup, re, stopwords, WordNetLemmatizer
+Vectorising text (Week 6)	Turns words into numbers	After cleaning text, before the model	from sklearn.feature_extraction.text import TfidfVectorizer
+X = TfidfVectorizer().fit_transform(df['text'])
+One-hot baskets (Week 4)	Turns shopping data into True/False per item	Using apriori / association rules	Each column is an item and each row is a basket, with True/False values
+0.4 The usual order
+Load (read_csv)
+Look (head, info, describe, isnull)
+Remove duplicates
+Fix missing values
+Drop useless columns
+Fix types and messy text
+Handle outliers
+Encode categories into numbers
+Split X / y, then train / test (skip for clustering)
+Scale (if the model needs it)
+Build the model
+
+💬 Report tip: for every step, write what you did and why. For example: "I filled missing ages with the median because the column had outliers, and the median isn't affected by them."
+
+A plain-English guide to my tutorials: which packages to install for which model, and how to clean data step by step.
+
+Golden rule: in the PyCharm Terminal, always install with python -m pip install <package> (not just pip install). This puts the package in the same Python your Run button uses.
+
+1. Setup: installing packages
 1.1 Check which Python you are using
 python --version
 
@@ -406,4 +486,4 @@ print(df.groupby("Cluster").mean())   # describe each group: great for business 
 [ ] Technique 1 and 2: what they are and why they suit THIS data
 [ ] Results: accuracy, F1 or silhouette, etc., with screenshots of code and output
 [ ] Business recommendation: what the company should actually do
-[ ] Limitations: e.g. small dataset, imbalance, what you'd try with more tim
+[ ] Limitations: e.g. small dataset, imbalance, what you'd try with more time
